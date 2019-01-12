@@ -51,6 +51,12 @@
 # available as well, as that might be needed in some cases.
 #CLIENT="curl"
 
+# Usernames should be validated to be of a known format.
+# Special characters will be escaped anyway, but it is generally not
+# recommended to allow more than necessary.
+# You could use something like this.
+#USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
+
 # Adapt to your needs.
 #SERVER="ldap://ldap-server:389"
 # Will try binding as this user.
@@ -77,10 +83,28 @@
 ########## END OF CONFIGURATION
 
 
+# Check username and password are present and not malformed.
 if [ -z "$username" ] || [ -z "$password" ]; then
 	echo "Need username and password environment variables." >&2
 	exit 2
 fi
+if [ ! -z "$USERNAME_PATTERN" ]; then
+	username_match=$(echo "$username" | sed -r "s/$USERNAME_PATTERN/x/")
+	if [ "$username_match" != "x" ]; then
+		echo "Username '$username' has an invalid format." >&2
+		exit 2
+	fi
+fi
+
+# Escape username to be safely usable in LDAP URI.
+# https://ldapwiki.com/wiki/DN%20Escape%20Values
+username=$(echo "$username" | sed -r \
+	-e 's/[,\\#+<>;"=/?]/\\\0/g' \
+	-e 's/^ (.*)$/\\ \1/' \
+	-e 's/^(.*) $/\1\\ /' \
+)
+[ -z "$DEBUG" ] || echo "Escaped username: $username" >&2
+
 if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
 	echo "SERVER and USERDN need to be configured." >&2
 	exit 2

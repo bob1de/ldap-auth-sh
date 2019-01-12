@@ -18,6 +18,8 @@
 # curl is available in the official home-assistant docker image
 CLIENT="curl"
 
+USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
+
 SERVER="ldap://ldap-server:389"
 USERDN="uid=$username,ou=people,dc=example,dc=com"
 
