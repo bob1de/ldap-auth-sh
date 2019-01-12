@@ -22,6 +22,7 @@ You need:
 
 * a POSIX-compliant shell (even busybox works)
 * a compatible LDAP client, currently one of
+
   * ``curl`` (with ``ldap`` protocol support compiled in, verify with
     ``curl --version``)
   * ``ldapsearch``
