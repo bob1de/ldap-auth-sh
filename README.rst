@@ -3,8 +3,9 @@ A Simple Shell Script to Authenticate Against LDAP
 
 This is a simple but extensible shell script to authenticate users by
 binding to LDAP. Additional checks, such as requiring group memberships,
-can easily be configured. In case of a successful authentication,
-it exits with exit code 0, non-zero otherwise.
+can easily be configured. The credentials are read from environment
+variables. In case of a successful authentication, it exits with exit
+code 0, non-zero otherwise.
 
 ldap-auth-sh is known to work with:
 
