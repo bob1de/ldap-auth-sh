@@ -111,14 +111,14 @@ auth_curl() {
 }
 
 auth_ldapsearch() {
-	common_opts="-o nettimeout=$TIMEOUT -H $SERVER \
-		-x -D $USERDN -w $password"
-	[ -z "$DEBUG" ] || common_opts="$common_opts -v"
+	common_opts="-o nettimeout=$TIMEOUT -H $SERVER -x"
+	[ -z "$DEBUG" ] || common_opts="-v $common_opts"
 	if [ -z "$BASEDN" ]; then
-		output=$(ldapwhoami $common_opts)
+		output=$(ldapwhoami $common_opts -D "$USERDN" -w "$password")
 	else
-		output=$(ldapsearch $common_opts -LLL -s "$SCOPE" \
-			-b "$BASEDN" "$FILTER" dn $ATTRS)
+		output=$(ldapsearch $common_opts -LLL \
+			-D "$USERDN" -w "$password" \
+			-s "$SCOPE" -b "$BASEDN" "$FILTER" dn $ATTRS)
 	fi
 	[ $? -ne 0 ] && return 1
 	return 0
