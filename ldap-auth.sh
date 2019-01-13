@@ -4,7 +4,7 @@
 # A simple shell script to authenticate users against LDAP.
 #
 # This script should be able to run on any POSIX-compliant shell with
-# cat and sed available (even works on busybox).
+# cat, grep and sed available (even works on BusyBox).
 # It expects to get two environment variables: username and password of
 # the user to be authenticated.
 #
@@ -166,9 +166,7 @@ result=$?
 
 entries=0
 if [ $result -eq 0 ] && [ ! -z "$BASEDN" ]; then
-	entries=$(sed -nr "s/^dn\s*:/\0/Ip" | wc -l) <<-EOF
-		$output
-		EOF
+	entries=$(echo "$output" | grep -cie '^dn\s*:')
 	[ "$entries" != "1" ] && result=1
 fi
 

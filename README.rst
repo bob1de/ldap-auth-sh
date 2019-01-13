@@ -9,8 +9,8 @@ code 0, non-zero otherwise.
 
 ldap-auth-sh is known to work with:
 
-* OpenVPN (via the ``--auth-user-pass-verify`` option)
-* Home Assistant (via the upcoming ``command_line`` auth provider)
+* **OpenVPN** (via the ``--auth-user-pass-verify`` option)
+* **Home Assistant** (via the upcoming ``command_line`` auth provider)
 
 However, it's of course not limited to these platforms.
 
@@ -20,7 +20,8 @@ Requirements
 
 You need:
 
-* a POSIX-compliant shell (even busybox works)
+* a POSIX-compliant shell with ``cat``, ``grep`` and ``sed`` (even
+  BusyBox will do)
 * a compatible LDAP client, currently one of
 
   * ``curl`` (with ``ldap`` protocol support compiled in, verify with

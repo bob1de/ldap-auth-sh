@@ -37,9 +37,7 @@ ATTRS="$NAME_ATTR"
 
 on_auth_success() {
 	# print the meta entries for use in HA
-	name=$(sed -nr "s/^\s*$NAME_ATTR:\s*(.+)\s*\$/\1/Ip") <<-EOF
-		$output
-		EOF
+	name=$(echo "$output" | sed -nr "s/^\s*$NAME_ATTR:\s*(.+)\s*\$/\1/Ip")
 	[ -z "$name" ] || echo "name=$name"
 }
 
