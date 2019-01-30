@@ -15,19 +15,19 @@
 #         #meta: true
 #
 
+. "$(dirname "$0")/../ldap-auth.sh"
+
 # curl is available in the official home-assistant docker image
 CLIENT="curl"
 
 USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
 
 SERVER="ldap://ldap-server:389"
-USERDN="uid=$username,ou=people,dc=example,dc=com"
+#USERDN="uid=$(ldap_dn_escape "$username"),ou=people,dc=example,dc=com"
 
 BASEDN="$USERDN"
 SCOPE="base"
 FILTER="(&(objectClass=person)(memberOf=cn=smarthome,ou=groups,dc=example,dc=com))"
-
-TIMEOUT=3
 
 
 ########## Home Assistant specific features
@@ -42,4 +42,5 @@ on_auth_success() {
 }
 
 
-. "$(dirname "$0")/../ldap-auth.sh"
+# Do the authentication.
+ldap_auth_run
