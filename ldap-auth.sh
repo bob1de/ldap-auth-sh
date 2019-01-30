@@ -83,15 +83,21 @@
 ########## END OF CONFIGURATION
 
 
+# Log messages to stderr.
+log() {
+	echo "$1" >&2
+}
+
+
 # Check username and password are present and not malformed.
 if [ -z "$username" ] || [ -z "$password" ]; then
-	echo "Need username and password environment variables." >&2
+	log "Need username and password environment variables."
 	exit 2
 fi
 if [ ! -z "$USERNAME_PATTERN" ]; then
 	username_match=$(echo "$username" | sed -r "s/$USERNAME_PATTERN/x/")
 	if [ "$username_match" != "x" ]; then
-		echo "Username '$username' has an invalid format." >&2
+		log "Username '$username' has an invalid format."
 		exit 2
 	fi
 fi
@@ -103,23 +109,23 @@ username=$(echo "$username" | sed -r \
 	-e 's/^ (.*)$/\\ \1/' \
 	-e 's/^(.*) $/\1\\ /' \
 )
-[ -z "$DEBUG" ] || echo "Escaped username: $username" >&2
+[ -z "$DEBUG" ] || log "Escaped username: $username"
 
 if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
-	echo "SERVER and USERDN need to be configured." >&2
+	log "SERVER and USERDN need to be configured."
 	exit 2
 fi
 if [ -z "$TIMEOUT" ]; then
-	echo "TIMEOUT needs to be configured." >&2
+	log "TIMEOUT needs to be configured."
 	exit 2
 fi
 if [ ! -z "$BASEDN" ]; then
 	if [ -z "$SCOPE" ] || [ -z "$FILTER" ]; then
-		echo "BASEDN, SCOPE and FILTER may only be configured together." >&2
+		log "BASEDN, SCOPE and FILTER may only be configured together."
 		exit 2
 	fi
 elif [ ! -z "$ATTRS" ]; then
-	echo "Configuring ATTRS only makes sense when enabling searching." >&2
+	log "Configuring ATTRS only makes sense when enabling searching."
 	exit 2
 fi
 
@@ -157,7 +163,7 @@ case "$CLIENT" in
 		auth_ldapsearch
 		;;
 	*)
-		echo "Unsupported client '$CLIENT', revise the configuration." >&2
+		log "Unsupported client '$CLIENT', revise the configuration."
 		exit 2
 		;;
 esac
@@ -180,11 +186,11 @@ if [ ! -z "$DEBUG" ]; then
 fi
 
 if [ $result -ne 0 ]; then
-	echo "User '$username' failed to authenticate." >&2
+	log "User '$username' failed to authenticate."
 	type on_auth_failure > /dev/null && on_auth_failure
 	exit 1
 fi
 
-echo "User '$username' authenticated successfully." >&2
+log "User '$username' authenticated successfully."
 type on_auth_success > /dev/null && on_auth_success
 exit 0
