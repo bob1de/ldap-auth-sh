@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# A simple shell script to authenticate users against LDAP.
+# ldap-auth.sh - Simple shell script to authenticate users against LDAP
 #
 # This script should be able to run on any POSIX-compliant shell with
 # cat, grep and sed available (even works on BusyBox).
@@ -18,17 +18,18 @@
 # otherwise. Status messages are only written to stderr, not stdout,
 # so you can use stdout to pass whatever you want back to the caller.
 #
-# In order to run this script, you need to create a configuration file
-# first. The configuration file will be sourced when running this script,
-# hence you can use regular shell script syntax inside.
-# Either take a config from the examples directory or copy the available
-# settings below to a new file.
+# In order to run ldap-auth.sh, you need to create a configuration file
+# first. Either take a config from the examples directory or copy the
+# available settings below to a new file.
+# NOTE: The configuration file will be sourced, hence you can use regular
+# shell script syntax inside. Since the config file is in fact executed,
+# make sure it's content is safe.
 #
 # Finally, configure the service that wants to do LDAP authentication to
-# execute this script and pass the configuration file as first argument.
+# execute ldap-auth.sh and pass the configuration file as its only argument.
 #
 # Additionally, you may define the following functions in your config file,
-# which get then called at the corresponding events, before the program
+# which get then called at the corresponding events, before ldap-auth.sh
 # exits. You could print some additional info from these functions,
 # for instance.
 #
@@ -144,11 +145,19 @@ ldap_auth_ldapsearch() {
 if [ -z "$1" ]; then
 	log "Usage: ldap-auth.sh <config-file>"
 	exit 2
-elif [ ! -f "$1" ]; then
-	log "Configuration file '$1' not found."
+fi
+CONFIG_FILE="$(realpath "$1")"
+if [ ! -e "$CONFIG_FILE" ]; then
+	log "'$CONFIG_FILE': not found"
+	exit 2
+elif [ ! -f "$CONFIG_FILE" ]; then
+	log "'$CONFIG_FILE': not a file"
+	exit 2
+elif [ ! -r "$CONFIG_FILE" ]; then
+	log "'$CONFIG_FILE': no read permission"
 	exit 2
 fi
-. "$(realpath "$1")"
+. "$CONFIG_FILE"
 
 # Validate config.
 if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
