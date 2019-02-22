@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #
 # A simple shell script to authenticate users against LDAP.
 #
@@ -16,18 +18,16 @@
 # otherwise. Status messages are only written to stderr, not stdout,
 # so you can use stdout to pass whatever you want back to the caller.
 #
-# NOTE: Don't call this script directly!
-# Source it instead, set configuration parameters as desired and call the
-# ldap_auth_run function, like so:
+# In order to run this script, you need to create a configuration file
+# first. The configuration file will be sourced when running this script,
+# hence you can use regular shell script syntax inside.
+# Either take a config from the examples directory or copy the available
+# settings below to a new file.
 #
-#     #!/bin/sh
-#     . "$(dirname "$0")/ldap-auth.inc"
-#     # Configuration...
-#     ldap_auth_run
+# Finally, configure the service that wants to do LDAP authentication to
+# execute this script and pass the configuration file as first argument.
 #
-# It'll then go, do the authentication with your custom settings and exit.
-#
-# Additionally, you may define the following functions in your own script,
+# Additionally, you may define the following functions in your config file,
 # which get then called at the corresponding events, before the program
 # exits. You could print some additional info from these functions,
 # for instance.
@@ -47,12 +47,12 @@
 #
 
 ########## CONFIGURATION ##########
-
 # Some settings (those not commented out) have default values set. You
-# don't need to specify them yourself unless you want to change these
-# defaults.
+# don't need to include them in your configuration file unless you want
+# to change these defaults.
 
-# Uncomment to enable debugging to stderr (prints full client output and more).
+# Uncomment to enable debugging to stderr (prints full client output
+# and more).
 #DEBUG=1
 
 # Must be one of "curl" and "ldapsearch".
@@ -93,6 +93,8 @@ TIMEOUT=3
 
 ########## END OF CONFIGURATION ##########
 
+
+########## SCRIPT CODE, DON'T TOUCH!  ##########
 
 # Log messages to stderr.
 log() {
@@ -138,76 +140,85 @@ ldap_auth_ldapsearch() {
 }
 
 
-# Entrypoint
-ldap_auth_run() {
-	# Check username and password are present and not malformed.
-	if [ -z "$username" ] || [ -z "$password" ]; then
-		log "Need username and password environment variables."
+# Source the config file.
+if [ -z "$1" ]; then
+	log "Usage: ldap-auth.sh <config-file>"
+	exit 2
+elif [ ! -f "$1" ]; then
+	log "Configuration file '$1' not found."
+	exit 2
+fi
+. "$(realpath "$1")"
+
+# Validate config.
+if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
+	log "SERVER and USERDN need to be configured."
+	exit 2
+fi
+if [ -z "$TIMEOUT" ]; then
+	log "TIMEOUT needs to be configured."
+	exit 2
+fi
+if [ ! -z "$BASEDN" ]; then
+	if [ -z "$SCOPE" ] || [ -z "$FILTER" ]; then
+		log "BASEDN, SCOPE and FILTER may only be configured together."
 		exit 2
 	fi
-	if [ ! -z "$USERNAME_PATTERN" ]; then
-		username_match=$(echo "$username" | sed -r "s/$USERNAME_PATTERN/x/")
-		if [ "$username_match" != "x" ]; then
-			log "Username '$username' has an invalid format."
-			exit 2
-		fi
-	fi
+elif [ ! -z "$ATTRS" ]; then
+	log "Configuring ATTRS only makes sense when enabling searching."
+	exit 2
+fi
 
-	if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
-		log "SERVER and USERDN need to be configured."
+# Check username and password are present and not malformed.
+if [ -z "$username" ] || [ -z "$password" ]; then
+	log "Need username and password environment variables."
+	exit 2
+fi
+if [ ! -z "$USERNAME_PATTERN" ]; then
+	username_match=$(echo "$username" | sed -r "s/$USERNAME_PATTERN/x/")
+	if [ "$username_match" != "x" ]; then
+		log "Username '$username' has an invalid format."
 		exit 2
 	fi
-	if [ -z "$TIMEOUT" ]; then
-		log "TIMEOUT needs to be configured."
+fi
+
+# Do the authentication.
+case "$CLIENT" in
+	"curl")
+		ldap_auth_curl
+		;;
+	"ldapsearch")
+		ldap_auth_ldapsearch
+		;;
+	*)
+		log "Unsupported client '$CLIENT', revise the configuration."
 		exit 2
-	fi
-	if [ ! -z "$BASEDN" ]; then
-		if [ -z "$SCOPE" ] || [ -z "$FILTER" ]; then
-			log "BASEDN, SCOPE and FILTER may only be configured together."
-			exit 2
-		fi
-	elif [ ! -z "$ATTRS" ]; then
-		log "Configuring ATTRS only makes sense when enabling searching."
-		exit 2
-	fi
+		;;
+esac
 
-	case "$CLIENT" in
-		"curl")
-			ldap_auth_curl
-			;;
-		"ldapsearch")
-			ldap_auth_ldapsearch
-			;;
-		*)
-			log "Unsupported client '$CLIENT', revise the configuration."
-			exit 2
-			;;
-	esac
+result=$?
 
-	result=$?
+entries=0
+if [ $result -eq 0 ] && [ ! -z "$BASEDN" ]; then
+	entries=$(echo "$output" | grep -cie '^dn\s*:')
+	[ "$entries" != "1" ] && result=1
+fi
 
-	entries=0
-	if [ $result -eq 0 ] && [ ! -z "$BASEDN" ]; then
-		entries=$(echo "$output" | grep -cie '^dn\s*:')
-		[ "$entries" != "1" ] && result=1
-	fi
+if [ ! -z "$DEBUG" ]; then
+	cat >&2 <<-EOF
+		Result: $result
+		Number of entries: $entries
+		Client output:
+		$output
+		EOF
+fi
 
-	if [ ! -z "$DEBUG" ]; then
-		cat >&2 <<-EOF
-			Result: $result
-			Number of entries: $entries
-			Client output:
-			$output
-			EOF
-	fi
+if [ $result -ne 0 ]; then
+	log "User '$username' failed to authenticate."
+	type on_auth_failure > /dev/null && on_auth_failure
+	exit 1
+fi
 
-	if [ $result -ne 0 ]; then
-		log "User '$username' failed to authenticate."
-		type on_auth_failure > /dev/null && on_auth_failure
-		exit 1
-	fi
-
-	log "User '$username' authenticated successfully."
-	type on_auth_success > /dev/null && on_auth_success
-	exit 0
-}
+log "User '$username' authenticated successfully."
+type on_auth_success > /dev/null && on_auth_success
+exit 0

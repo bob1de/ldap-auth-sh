@@ -32,7 +32,7 @@ You need:
 Getting Started
 ---------------
 
-Just copy the file `ldap-auth.inc <ldap-auth.inc>`_ and read the comments
+Just copy the file `ldap-auth.sh <ldap-auth.sh>`_ and read the comments
 therein.
 
 Sample configurations are shipped in the `examples <examples>`_ directory.
