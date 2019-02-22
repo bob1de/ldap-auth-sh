@@ -19,7 +19,7 @@
 # so you can use stdout to pass whatever you want back to the caller.
 #
 # NOTE: Don't call this script directly!
-# Source it instead, set required configuration parameters and call
+# Source it instead, set configuration parameters as desired and call
 # ldap_auth_run, like so:
 #
 #     . "$(dirname "$0")/ldap-auth.sh"
@@ -51,12 +51,19 @@
 
 ########## CONFIGURATION
 
+# Some settings (those not commented out) have default values set. You
+# don't need to specify them yourself unless you want to change these
+# defaults.
+
 # Uncomment to enable debugging to stderr (prints full client output and more).
 #DEBUG=1
 
 # Must be one of "curl" and "ldapsearch".
-# NOTE: When choosing "ldapsearch", make sure the ldapwhoami command is
-# available as well, as that might be needed in some cases.
+# NOTE:
+# - When choosing "curl", make sure "curl --version | grep ldap" outputs
+#   something. Otherwise, curl was compiled without LDAP support.
+# - When choosing "ldapsearch", make sure the ldapwhoami command is
+#   available as well, as that might be needed in some cases.
 #CLIENT="curl"
 
 # Usernames should be validated to be of a known format.
@@ -69,12 +76,13 @@
 #SERVER="ldap://ldap-server:389"
 # Will try binding as this user.
 # ldap_dn_escape escapes special characters in strings to make them
-# usable within LDAP DNs.
+# usable within LDAP DN components.
 #USERDN="uid=$(ldap_dn_escape "$username"),ou=people,dc=example,dc=com"
 
 # If you want to take additional checks like requiring group memberships,
 # you can execute a custom search, which has to return exactly one result
 # in order for authentication to succeed.
+# Uncomment the following lines to enable search query execution.
 #BASEDN="$USERDN"
 #SCOPE="base"
 #FILTER="(&(objectClass=person)(memberOf=cn=some-group,ou=groups,dc=example,dc=com))"
@@ -82,8 +90,7 @@
 # You could process them in your own on_auth_success hook.
 #ATTRS="cn"
 
-# Setting a timeout (in seconds) is required.
-# When the timeout is exceeded (e.g. due to slow networking),
+# When the timeout (in seconds) is exceeded (e.g. due to slow networking),
 # authentication fails.
 TIMEOUT=3
 
