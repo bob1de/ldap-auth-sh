@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #
 # A simple shell script to authenticate users against LDAP.
 #
@@ -19,13 +17,12 @@
 # so you can use stdout to pass whatever you want back to the caller.
 #
 # NOTE: Don't call this script directly!
-# Source it instead, set configuration parameters as desired and call
-# ldap_auth_run, like so:
+# Source it instead, set configuration parameters as desired and call the
+# ldap_auth_run function, like so:
 #
-#     . "$(dirname "$0")/ldap-auth.sh"
-#
+#     #!/bin/sh
+#     . "$(dirname "$0")/ldap-auth.inc"
 #     # Configuration...
-#
 #     ldap_auth_run
 #
 # It'll then go, do the authentication with your custom settings and exit.
@@ -49,7 +46,7 @@
 # with blank lines between different attributes and deep indentation.
 #
 
-########## CONFIGURATION
+########## CONFIGURATION ##########
 
 # Some settings (those not commented out) have default values set. You
 # don't need to specify them yourself unless you want to change these
@@ -94,7 +91,7 @@
 # authentication fails.
 TIMEOUT=3
 
-########## END OF CONFIGURATION
+########## END OF CONFIGURATION ##########
 
 
 # Log messages to stderr.

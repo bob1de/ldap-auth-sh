@@ -15,7 +15,7 @@
 #         #meta: true
 #
 
-. "$(dirname "$0")/../ldap-auth.sh"
+. "$(dirname "$0")/../ldap-auth.inc"
 
 # curl is available in the official home-assistant docker image
 CLIENT="curl"
