@@ -22,7 +22,7 @@
 # Source it instead, set required configuration parameters and call
 # ldap_auth_run, like so:
 #
-#     . "$(dirname "$1")/ldap-auth.sh"
+#     . "$(dirname "$0")/ldap-auth.sh"
 #
 #     # Configuration...
 #
