@@ -77,9 +77,9 @@
 # usable within LDAP DN components.
 #USERDN="uid=$(ldap_dn_escape "$username"),ou=people,dc=example,dc=com"
 
-# If you want to take additional checks like requiring group memberships,
-# you can execute a custom search, which has to return exactly one result
-# in order for authentication to succeed.
+# If you want to take additional checks like requiring group memberships
+# or fetch specific user attributes, you can execute a custom search, which
+# has to return exactly one result in order for authentication to succeed.
 # Uncomment the following lines to enable search query execution.
 #BASEDN="$USERDN"
 #SCOPE="base"
@@ -95,7 +95,7 @@ TIMEOUT=3
 ########## END OF CONFIGURATION ##########
 
 
-########## SCRIPT CODE, DON'T TOUCH!  ##########
+########## SCRIPT CODE FOLLOWS, DON'T TOUCH!  ##########
 
 # Log messages to stderr.
 log() {
@@ -146,7 +146,7 @@ if [ -z "$1" ]; then
 	log "Usage: ldap-auth.sh <config-file>"
 	exit 2
 fi
-CONFIG_FILE="$(realpath "$1")"
+CONFIG_FILE=$(realpath "$1")
 if [ ! -e "$CONFIG_FILE" ]; then
 	log "'$CONFIG_FILE': not found"
 	exit 2
@@ -160,36 +160,38 @@ fi
 . "$CONFIG_FILE"
 
 # Validate config.
+err=0
 if [ -z "$SERVER" ] || [ -z "$USERDN" ]; then
 	log "SERVER and USERDN need to be configured."
-	exit 2
+	err=1
 fi
 if [ -z "$TIMEOUT" ]; then
 	log "TIMEOUT needs to be configured."
-	exit 2
+	err=1
 fi
 if [ ! -z "$BASEDN" ]; then
 	if [ -z "$SCOPE" ] || [ -z "$FILTER" ]; then
 		log "BASEDN, SCOPE and FILTER may only be configured together."
-		exit 2
+		err=1
 	fi
 elif [ ! -z "$ATTRS" ]; then
 	log "Configuring ATTRS only makes sense when enabling searching."
-	exit 2
+	err=1
 fi
 
 # Check username and password are present and not malformed.
 if [ -z "$username" ] || [ -z "$password" ]; then
 	log "Need username and password environment variables."
-	exit 2
-fi
-if [ ! -z "$USERNAME_PATTERN" ]; then
+	err=1
+elif [ ! -z "$USERNAME_PATTERN" ]; then
 	username_match=$(echo "$username" | sed -r "s/$USERNAME_PATTERN/x/")
 	if [ "$username_match" != "x" ]; then
 		log "Username '$username' has an invalid format."
-		exit 2
+		err=1
 	fi
 fi
+
+[ $err -ne 0 ] && exit 2
 
 # Do the authentication.
 case "$CLIENT" in
