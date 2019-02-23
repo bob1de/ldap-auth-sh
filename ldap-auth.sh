@@ -64,11 +64,13 @@
 #   available as well, as that might be needed in some cases.
 #CLIENT="curl"
 
-# Usernames should be validated to be of a known format.
-# Special characters will be escaped anyway, but it is generally not
-# recommended to allow more than necessary.
-# You could use something like this.
-#USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
+# Usernames should be validated using a regular expression to be of
+# a known format. Special characters will be escaped anyway, but it is
+# generally not recommended to allow more than necessary.
+# This pattern is set by default. In your config file, you can either
+# overwrite it with a different one or use "unset USERNAME_PATTERN" to
+# disable validation completely.
+USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
 
 # Adapt to your needs.
 #SERVER="ldap://ldap-server:389"
