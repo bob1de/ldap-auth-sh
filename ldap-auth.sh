@@ -90,6 +90,13 @@ USERNAME_PATTERN='^[a-z|A-Z|0-9|_|-|.]+$'
 # You could process them in your own on_auth_success hook.
 #ATTRS="cn"
 
+# If you want to use a service user account for determining the dn
+# (i.e. if your server uses cn= instead of uid= for the dn)
+# In this case, BASEDN should be look like "ou=people,dc=example,dc=com"
+# and SCOPE should be set to "sub".
+# BINDDN="cn=serviceUser,ou=people,dc=example,dc=com"
+# BINDPASS="passwordOfServiceUser"
+
 # When the timeout (in seconds) is exceeded (e.g. due to slow networking),
 # authentication fails.
 TIMEOUT=3
@@ -129,17 +136,24 @@ ldap_auth_curl() {
 }
 
 ldap_auth_ldapsearch() {
-	common_opts="-o nettimeout=$TIMEOUT -H $SERVER -x"
-	[ -z "$DEBUG" ] || common_opts="-v $common_opts"
-	if [ -z "$BASEDN" ]; then
-		output=$(ldapwhoami $common_opts -D "$USERDN" -w "$password")
-	else
-		output=$(ldapsearch $common_opts -LLL \
-			-D "$USERDN" -w "$password" \
-			-s "$SCOPE" -b "$BASEDN" "$FILTER" dn $ATTRS)
-	fi
-	[ $? -ne 0 ] && return 1
-	return 0
+        common_opts="-o nettimeout=$TIMEOUT -H $SERVER -x"
+        [ -z "$DEBUG" ] || common_opts="-v $common_opts"
+        if [ -z "$BASEDN" ]; then
+                output=$(ldapwhoami $common_opts -D "$USERDN" -w "$password")
+        elif [ -z "$BINDDN"]; then
+                output=$(ldapsearch $common_opts -LLL \
+                        -D "$USERDN" -w "$password" \
+                        -s "$SCOPE" -b "$BASEDN" "$FILTER" dn $ATTRS)
+        else
+                dn=$(ldapsearch $common_opts -LLL \
+                        -D "$BINDDN" -w "$BINDPASS" \
+                        -s sub -b "$BASEDN"  "(uid=$(ldap_dn_escape $username))" dn | grep 'dn: ' | sed 's/dn: //')
+                output=$(ldapsearch $common_opts -LLL \
+                        -D "$dn" -w "$password" \
+                        -s "$SCOPE" -b "$dn" "$FILTER" dn $ATTRS)
+        fi
+        [ $? -ne 0 ] && return 1
+        return 0
 }
 
 
